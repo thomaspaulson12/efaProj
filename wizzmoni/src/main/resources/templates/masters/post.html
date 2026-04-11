@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Post Master</title>
+    <link rel="stylesheet" th:href="@{/css/topbar.css}">
+    <link rel="stylesheet" th:href="@{/css/account.css}">
+    <style>
+        /* ── New-row input row ─────────────────────────────── */
+        .nr-row {
+            display: grid;
+            grid-template-columns: 120px 1fr 1fr 36px;
+            align-items: center;
+            border-bottom: 1px solid #dce3ef;
+            background: #fffef5;
+        }
+        .nr-row:first-child { border-top: 2px solid #1a3a6b; }
+
+        .nr-cell {
+            padding: 7px 10px;
+            border-right: 1px solid #dce3ef;
+        }
+        .nr-cell:last-child { border-right: none; padding: 4px 6px; }
+
+        .nr-input {
+            width: 100%; padding: 5px 8px;
+            border: 1px solid #d4daea; border-radius: 4px;
+            font-size: 12.5px; font-family: inherit;
+            outline: none; background: #fff; box-sizing: border-box;
+        }
+        .nr-input:focus { border-color: #1a3a6b; }
+        .nr-input.error { border-color: #b52020; background: #fff8f8; }
+
+        .nr-remove {
+            width: 26px; height: 26px;
+            border: none; border-radius: 4px;
+            background: #fef2f2; color: #b52020;
+            font-size: 13px; font-weight: 700;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: background .12s;
+            margin: auto;
+        }
+        .nr-remove:hover { background: #b52020; color: #fff; }
+
+        /* ── Saved grid rows ──────────────────────────────── */
+        .pm-row {
+            display: grid;
+            grid-template-columns: 120px 1fr 1fr 36px;
+            border-bottom: 1px solid #eaeff8;
+            transition: background .1s;
+        }
+        .pm-row:nth-child(even) { background: #f7f9fc; }
+        .pm-row:hover           { background: #edf2fc; }
+
+        .pm-cell {
+            padding: 9px 14px;
+            font-size: 12.5px;
+            color: #1a3a6b;
+            border-right: 1px solid #eaeff8;
+        }
+        .pm-cell:last-child { border-right: none; color: #5a6a8a; }
+        .pm-code-badge {
+            display: inline-block;
+            font-family: monospace; font-size: 11px;
+            background: #eaeff8; padding: 2px 5px;
+            border-radius: 3px; color: #4a6090;
+            margin-right: 7px;
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="fragments/topbar :: topbar"></div>
+<div id="toast"></div>
+
+<input type="hidden" id="cfg-company" th:value="${companyCode}">
+<input type="hidden" id="cfg-finyr"   th:value="${finyr}">
+
+<div class="master-page-wrapper">
+    <br>
+    <!-- ── TAB BAR ──────────────────────────────────────────── -->
+    <div class="master-tab-bar" >
+        <button class="master-tab" id="tab-account"
+                onclick="window.location.href='/masters/account'">
+            <span class="tab-icon">📒</span>
+            <span class="tab-label">Account Master</span>
+        </button>
+        <button class="master-tab active" id="tab-post"
+                onclick="window.location.href='/masters/post'">
+            <span class="tab-icon">📌</span>
+            <span class="tab-label">Post Master</span>
+        </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         POST MASTER PANEL
+         ════════════════════════════════════════════════════════ -->
+    <div class="account-page" style="flex-direction:column;">
+
+        <!-- Sub-header -->
+        <div class="form-panel-header" style="flex-shrink:0">
+            <span class="header-icon">📌</span>
+            <span class="form-panel-title">Post Master</span>
+            <span class="header-spacer"></span>
+        </div>
+
+        <!-- Content -->
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;
+                    background:#f0f3f8;padding:16px;">
+
+            <div class="form-card" style="flex:1;display:flex;flex-direction:column;
+                                          overflow:hidden;padding:0;margin-bottom:0;">
+
+                <!-- Column headers -->
+                <div style="display:grid;grid-template-columns:120px 1fr 1fr 36px;
+                            background:#1a3a6b;color:#fff;flex-shrink:0;">
+                    <div style="padding:9px 14px;font-size:11px;font-weight:700;
+                                text-transform:uppercase;letter-spacing:.6px;
+                                border-right:1px solid rgba(255,255,255,.15);">Post Type</div>
+                    <div style="padding:9px 14px;font-size:11px;font-weight:700;
+                                text-transform:uppercase;letter-spacing:.6px;
+                                border-right:1px solid rgba(255,255,255,.15);">A/c</div>
+                    <div style="padding:9px 14px;font-size:11px;font-weight:700;
+                                text-transform:uppercase;letter-spacing:.6px;
+                                border-right:1px solid rgba(255,255,255,.15);">Remarks</div>
+                    <div></div>
+                </div>
+
+                <!-- Scrollable body: saved rows + pending new rows -->
+                <div id="pm-body" style="flex:1;overflow-y:auto;position:relative;">
+
+                    <!-- Loading -->
+                    <div id="pm-loading"
+                         style="padding:30px;text-align:center;color:#8a9bbf;font-size:12px">
+                        <div style="font-size:28px;margin-bottom:8px">⏳</div>
+                        Loading…
+                    </div>
+
+                    <!-- Saved rows -->
+                    <div id="pm-rows"></div>
+
+                    <!-- Empty state (shown only when no saved rows AND no pending rows) -->
+                    <div id="pm-empty"
+                         style="display:none;padding:40px;text-align:center;color:#8a9bbf;">
+                        <div style="font-size:36px;opacity:.3">📌</div>
+                        <div style="font-size:13px;font-weight:600;
+                                    color:#6a7fa8;margin-top:8px;">No records found</div>
+                        <div style="font-size:12px;margin-top:4px;">
+                            Click Add Row to create entries</div>
+                    </div>
+
+                    <!-- Pending new rows container -->
+                    <div id="pm-new-rows"></div>
+
+                </div><!-- /pm-body -->
+            </div><!-- /form-card -->
+        </div><!-- /content -->
+
+        <!-- Footer -->
+        <div class="form-footer">
+            <button class="btn btn-ghost" id="btn-addrow" onclick="addRow()">
+                <span class="btn-icon">＋</span> Add Row
+            </button>
+            <span class="footer-spacer"></span>
+            <button class="btn btn-primary" id="btn-save"
+                    style="display:none" onclick="saveAllRows()">
+                <span class="btn-icon">💾</span> Save
+            </button>
+        </div>
+
+    </div>
+</div><!-- /master-page-wrapper -->
+
+<script>
+    var COMPANY_CODE = document.getElementById('cfg-company').value;
+    var FINYR        = document.getElementById('cfg-finyr').value;
+
+    var _accounts   = [];    // loaded once: [{c_accountcode, c_name}]
+    var _rowCounter = 0;     // unique id per pending row
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadGrid();
+        loadAccountDropdown();
+    });
+
+    // ════════════════════════════════════════════════════════════
+    //  SAVED ROWS — LOAD
+    // ════════════════════════════════════════════════════════════
+
+    function loadGrid() {
+        document.getElementById('pm-loading').style.display = '';
+        document.getElementById('pm-rows').innerHTML = '';
+        document.getElementById('pm-empty').style.display = 'none';
+
+        fetch('/masters/api/post/list?companyCode=' + encodeURIComponent(COMPANY_CODE))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            document.getElementById('pm-loading').style.display = 'none';
+            if (data.error) { showToast('✕ ' + data.error, 'error'); return; }
+
+            var rows = data.rows || [];
+            var container = document.getElementById('pm-rows');
+
+            if (rows.length === 0) {
+                checkEmpty();
+                return;
+            }
+
+            rows.forEach(function(row) {
+                var postType    = (row.postType    || row.post_type    || '').trim();
+                var accountCode = (row.accountCode || row.c_accountcode || '').trim();
+                var accountName = (row.accountName || row.c_name       || '').trim();
+                var remarks     = (row.remarks     || '').trim();
+
+                var rowEl = document.createElement('div');
+                rowEl.className = 'pm-row';
+
+                var c1 = document.createElement('div');
+                c1.className = 'pm-cell';
+                c1.style.fontFamily = 'monospace';
+                c1.style.fontWeight = '700';
+                c1.textContent = postType;
+
+                var c2 = document.createElement('div');
+                c2.className = 'pm-cell';
+                c2.innerHTML =
+                    '<span class="pm-code-badge">' + escHtml(accountCode) + '</span>' +
+                    escHtml(accountName);
+
+                var c3 = document.createElement('div');
+                c3.className = 'pm-cell';
+                c3.textContent = remarks;
+
+                // 4th empty cell to align with the remove button column
+                var c4 = document.createElement('div');
+                rowEl.appendChild(c1);
+                rowEl.appendChild(c2);
+                rowEl.appendChild(c3);
+                rowEl.appendChild(c4);
+                container.appendChild(rowEl);
+            });
+        })
+        .catch(function(err) {
+            document.getElementById('pm-loading').style.display = 'none';
+            showToast('✕ Failed to load: ' + err.message, 'error');
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  ACCOUNT DROPDOWN — LOAD ONCE
+    // ════════════════════════════════════════════════════════════
+
+    function loadAccountDropdown() {
+        fetch('/masters/api/post/accounts?companyCode=' + encodeURIComponent(COMPANY_CODE))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error || !data.accounts) return;
+            _accounts = data.accounts;
+        })
+        .catch(function(err) { console.error('Account dropdown failed:', err); });
+    }
+
+    function buildSelect(id) {
+        var sel = document.createElement('select');
+        sel.id = id;
+        sel.className = 'nr-input';
+        var opt0 = document.createElement('option');
+        opt0.value = ''; opt0.textContent = '— Select Account —';
+        sel.appendChild(opt0);
+        _accounts.forEach(function(a) {
+            var opt = document.createElement('option');
+            opt.value       = a.c_accountcode;
+            opt.textContent = a.c_accountcode + '  —  ' + (a.c_name || '');
+            sel.appendChild(opt);
+        });
+        return sel;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  PENDING ROWS — ADD / REMOVE
+    // ════════════════════════════════════════════════════════════
+
+    function addRow() {
+        var rowId = ++_rowCounter;
+        var pending = document.getElementById('pm-new-rows');
+        document.getElementById('pm-empty').style.display = 'none';
+
+        var rowEl = document.createElement('div');
+        rowEl.className = 'nr-row';
+        rowEl.id = 'nr-row-' + rowId;
+
+        // Post Type
+        var c1 = document.createElement('div');
+        c1.className = 'nr-cell';
+        var ptInput = document.createElement('input');
+        ptInput.type = 'text'; ptInput.maxLength = 6;
+        ptInput.className = 'nr-input';
+        ptInput.id = 'nr-pt-' + rowId;
+        ptInput.placeholder = 'e.g. AAAAAA';
+        ptInput.oninput = function() { this.value = this.value.toUpperCase(); };
+        c1.appendChild(ptInput);
+
+        // Account
+        var c2 = document.createElement('div');
+        c2.className = 'nr-cell';
+        var acSel = buildSelect('nr-ac-' + rowId);
+        c2.appendChild(acSel);
+
+        // Remarks
+        var c3 = document.createElement('div');
+        c3.className = 'nr-cell';
+        var rmInput = document.createElement('input');
+        rmInput.type = 'text'; rmInput.maxLength = 50;
+        rmInput.className = 'nr-input';
+        rmInput.id = 'nr-rm-' + rowId;
+        rmInput.placeholder = 'Remarks *';
+        c3.appendChild(rmInput);
+
+        // Remove button
+        var c4 = document.createElement('div');
+        c4.className = 'nr-cell';
+        var removeBtn = document.createElement('button');
+        removeBtn.className = 'nr-remove';
+        removeBtn.title = 'Remove this row';
+        removeBtn.innerHTML = '🗑️';
+        removeBtn.onclick = function() { removeRow(rowId); };
+        c4.appendChild(removeBtn);
+
+        rowEl.appendChild(c1);
+        rowEl.appendChild(c2);
+        rowEl.appendChild(c3);
+        rowEl.appendChild(c4);
+        pending.appendChild(rowEl);
+
+        // Show Save button
+        document.getElementById('btn-save').style.display = 'inline-flex';
+
+        // Focus Post Type of new row
+        setTimeout(function() { ptInput.focus(); }, 50);
+    }
+
+    function removeRow(rowId) {
+        var el = document.getElementById('nr-row-' + rowId);
+        if (el) el.remove();
+        updateSaveBtn();
+        checkEmpty();
+    }
+
+    function updateSaveBtn() {
+        var pending = document.getElementById('pm-new-rows');
+        var hasPending = pending.children.length > 0;
+        document.getElementById('btn-save').style.display =
+            hasPending ? 'inline-flex' : 'none';
+    }
+
+    function checkEmpty() {
+        var hasSaved  = document.getElementById('pm-rows').children.length > 0;
+        var hasPending = document.getElementById('pm-new-rows').children.length > 0;
+        document.getElementById('pm-empty').style.display =
+            (!hasSaved && !hasPending) ? '' : 'none';
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  SAVE ALL PENDING ROWS
+    // ════════════════════════════════════════════════════════════
+
+    function saveAllRows() {
+        var pending = document.getElementById('pm-new-rows');
+        var rowEls  = pending.querySelectorAll('.nr-row');
+
+        if (rowEls.length === 0) {
+            showToast('No pending rows to save.', 'info');
+            return;
+        }
+
+        // Collect data + clear any previous error highlights
+        var rows = [];
+        var valid = true;
+
+        rowEls.forEach(function(rowEl, idx) {
+            var idPart  = rowEl.id.replace('nr-row-', '');
+            var ptEl    = document.getElementById('nr-pt-' + idPart);
+            var acEl    = document.getElementById('nr-ac-' + idPart);
+            var rmEl    = document.getElementById('nr-rm-' + idPart);
+
+            // Clear errors
+            [ptEl, acEl, rmEl].forEach(function(el) {
+                if (el) el.classList.remove('error');
+            });
+
+            var postType    = ptEl  ? ptEl.value.trim()  : '';
+            var accountCode = acEl  ? acEl.value.trim()  : '';
+            var remarks     = rmEl  ? rmEl.value.trim()  : '';
+
+            // Client-side validation (mirrors PB: stop at first error)
+            if (valid && postType.length !== 6) {
+                ptEl.classList.add('error'); ptEl.focus();
+                showToast('Row ' + (idx+1) + ': Post Type must be exactly 6 characters', 'error');
+                valid = false;
+            } else if (valid && !accountCode) {
+                acEl.classList.add('error'); acEl.focus();
+                showToast('Row ' + (idx+1) + ': Please select an Account', 'error');
+                valid = false;
+            } else if (valid && !remarks) {
+                rmEl.classList.add('error'); rmEl.focus();
+                showToast('Row ' + (idx+1) + ': Remarks is required', 'error');
+                valid = false;
+            }
+
+            rows.push({ postType: postType, accountCode: accountCode, remarks: remarks });
+        });
+
+        if (!valid) return;
+
+        var btn = document.getElementById('btn-save');
+        btn.disabled = true; btn.textContent = 'Saving…';
+
+        fetch('/masters/api/post/save', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyCode: COMPANY_CODE, rows: rows })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">💾</span> Save';
+            if (d.success) {
+                showToast('✓ ' + (d.message || 'Saved successfully'), 'success');
+                // Clear pending rows and reload grid
+                document.getElementById('pm-new-rows').innerHTML = '';
+                document.getElementById('btn-save').style.display = 'none';
+                loadGrid();
+            } else {
+                // Highlight errored row if server returns rowIndex
+                if (typeof d.rowIndex === 'number') {
+                    var errEl = rowEls[d.rowIndex];
+                    if (errEl) {
+                        errEl.querySelectorAll('.nr-input').forEach(function(el) {
+                            el.classList.add('error');
+                        });
+                    }
+                }
+                showToast('✕ ' + (d.error || 'Save failed'), 'error');
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">💾</span> Save';
+            showToast('✕ ' + err.message, 'error');
+        });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    var _tt = null;
+    function showToast(msg, type) {
+        var t = document.getElementById('toast');
+        t.textContent = msg; t.className = 'show ' + (type || 'info');
+        clearTimeout(_tt); _tt = setTimeout(function() { t.className = ''; }, 3500);
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' &&
+            document.getElementById('pm-new-rows').children.length > 0)
+            saveAllRows();
+    });
+</script>
+</body>
+</html>

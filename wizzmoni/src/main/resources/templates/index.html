@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/topbar.css}">
+    <style>
+        html {
+            background-image: url('/images/dashboard-bg.png');
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        /* Topbar is flush — no margin needed */
+
+        /* Content area below the floating topbar */
+        .dashboard-bg {
+            position: relative;
+            /* topbar is 60px, flush, no margin */
+            height: calc(100vh - 60px);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dashboard-bg::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            backdrop-filter: blur(6px);
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 1;
+        }
+
+        .dashboard-content {
+            position: relative;
+            z-index: 2;
+            padding: 25px 40px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<!-- body.dashboard activates the rounded/glassy topbar overrides in topbar.css -->
+<body>
+
+<div th:replace="fragments/topbar :: topbar"></div>
+
+<div class="dashboard-bg">
+</div>
+
+</body>
+</html>

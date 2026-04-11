@@ -1,0 +1,144 @@
+/* ═══════════════════════════════════════════════════════════
+   TOPBAR — Base styles
+   Flush, solid navy. Used by account.html, post.html, etc.
+   Dashboard gets rounded + glassy overrides via body.dashboard
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Logo ──────────────────────────────────────────────── */
+.logo-box {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.company-logo {
+    height: 40px;
+    width: auto;
+    display: block;
+}
+
+/* ── Topbar shell ─────────────────────────────────────── */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1a3a6b;
+    color: white;
+    padding: 0 20px;
+    height: 60px;
+    position: relative;
+    z-index: 100;
+
+    /* Flush by default — no rounding, no gap */
+    border-radius: 0;
+    margin: 0;
+}
+
+/* ── Left section ─────────────────────────────────────── */
+.topbar-left {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+/* ── Nav menu ─────────────────────────────────────────── */
+.nav-menu {
+    display: flex;
+    gap: 15px;
+    height: 100%;
+}
+
+.nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.nav-item > a {
+    color: white;
+    text-decoration: none;
+    padding: 20px 10px;
+    transition: color 0.2s;
+}
+
+.nav-item > a:hover {
+    color: #FFD700;
+}
+
+/* ── Dropdown ─────────────────────────────────────────── */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #ffffff;
+    min-width: 200px;
+    border-radius: 8px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    padding: 8px 0;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.dropdown-menu a {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #1a3a6b;
+    text-decoration: none;
+    display: block;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-menu a:hover {
+    background: #f0f4f9;
+}
+
+.nav-item:hover .dropdown-menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── Submenu (Advance ▸) ──────────────────────────────── */
+.submenu-item {
+    position: relative;
+}
+
+.side-menu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    background: #ffffff;
+    min-width: 180px;
+    border-radius: 8px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+    padding: 8px 0;
+    z-index: 1001;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+}
+
+.submenu-item:hover .side-menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.arrow {
+    float: right;
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+.side-menu a {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #1a3a6b;
+    text-decoration: none;
+    display: block;
+}

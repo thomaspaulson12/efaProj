@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<script th:inline="javascript">
+    let message = /*[[${message}]]*/ "Session Expired";
+       let redirectUrl = /*[[${targetUrl}]]*/ "/";
+
+       alert(message);
+
+       window.location.href = redirectUrl;
+</script>
+
+</body>
+</html>

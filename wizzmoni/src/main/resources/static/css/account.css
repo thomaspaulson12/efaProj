@@ -1,0 +1,712 @@
+/* ===================================================
+   Account Master
+   Matches existing topbar styling exactly.
+   No Google Fonts — uses system font stack.
+   =================================================== */
+
+/* ── Reset body margin/padding that causes gaps ──── */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    background: #f0f3f8;
+}
+
+/* ── Force topbar to have NO rounded corners ─────── */
+/* Targets whatever class your topbar uses */
+nav, header, .topbar, .navbar, .top-bar,
+[class*="topbar"], [class*="navbar"], [class*="top-bar"] {
+    border-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+/* ── Page Layout ──────────────────────────────────── */
+.account-page {
+    display: flex;
+    /* height is NOT set here — controlled by .master-page-wrapper flex */
+    flex: 1;
+    min-height: 0;      /* critical: allows flex child to shrink below content size */
+    overflow: hidden;
+    background: #f0f3f8;
+    margin: 0;
+    padding: 0;
+}
+
+/* ════════════════════════════════════════════════════
+   LEFT PANEL — TREE
+   ════════════════════════════════════════════════════ */
+
+.tree-panel {
+    width: 268px;
+    min-width: 200px;
+    background: #ffffff;
+    border-right: 1px solid #d0d8e8;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tree-panel-header {
+    background: #1a3a6b;
+    color: #ffffff;
+    padding: 0 14px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.2px;
+    flex-shrink: 0;
+    /* No border-radius — flush edges */
+    border-radius: 0;
+}
+
+.tree-search {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e8ecf4;
+    flex-shrink: 0;
+    background: #f7f9fc;
+}
+
+.tree-search input {
+    width: 100%;
+    padding: 6px 10px 6px 28px;
+    border: 1px solid #cdd4e0;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #1a3a6b;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23909dba' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 8px center no-repeat;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color .15s;
+}
+.tree-search input:focus { border-color: #1a3a6b; }
+
+.tree-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 4px;
+}
+.tree-container::-webkit-scrollbar { width: 4px; }
+.tree-container::-webkit-scrollbar-thumb { background: #c8d2e4; border-radius: 4px; }
+
+/* ── Tree Nodes ──────────────────────────────────── */
+
+.tree-node { user-select: none; }
+
+.tree-node-row {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 4px;
+    margin: 1px 3px;
+    cursor: pointer;
+    gap: 4px;
+    transition: background .12s;
+    position: relative;
+}
+.tree-node-row:hover  { background: #eaeff8; }
+.tree-node-row.selected {
+    background: #1a3a6b;
+    color: #ffffff;
+}
+.tree-node-row.selected::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 25%; bottom: 25%;
+    width: 3px;
+    background: #5b9cf6;
+    border-radius: 0 3px 3px 0;
+}
+
+.toggle-btn {
+    width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px;
+    color: #8a9bbf;
+    flex-shrink: 0;
+    border-radius: 3px;
+    transition: background .1s;
+    cursor: pointer;
+}
+.toggle-btn:hover { background: rgba(26,58,107,.08); }
+.toggle-btn.leaf  { opacity: 0; pointer-events: none; }
+.tree-node-row.selected .toggle-btn { color: rgba(255,255,255,.55); }
+
+.node-icon { font-size: 14px; flex-shrink: 0; line-height: 1; }
+
+.node-label {
+    flex: 1;
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #1a3a6b;
+}
+.tree-node-row.selected .node-label { color: #ffffff; }
+
+.node-badge {
+    font-size: 10px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #eaeff8;
+    color: #4a6090;
+    font-weight: 500;
+    flex-shrink: 0;
+    letter-spacing: 0.2px;
+}
+.tree-node-row.selected .node-badge {
+    background: rgba(255,255,255,.15);
+    color: rgba(255,255,255,.8);
+}
+
+.node-children { padding-left: 18px; }
+.node-children.collapsed { display: none; }
+
+/* ════════════════════════════════════════════════════
+   RIGHT PANEL — FORM
+   ════════════════════════════════════════════════════ */
+
+.form-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #f0f3f8;
+    min-width: 0;
+}
+
+/* Sub-header bar (Account Details / VIEW MODE) */
+.form-panel-header {
+    background: #1a3a6b;
+    color: #ffffff;
+    padding: 0 20px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    border-radius: 0;
+}
+
+.form-panel-title {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.2px;
+}
+
+.breadcrumb {
+    font-size: 12px;
+    color: rgba(255,255,255,.55);
+    margin-left: 4px;
+}
+.breadcrumb span { color: rgba(255,255,255,.85); }
+
+.header-spacer { flex: 1; }
+
+.mode-badge {
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.mode-badge.view {
+    background: rgba(255,255,255,.15);
+    color: rgba(255,255,255,.9);
+    border: 1px solid rgba(255,255,255,.2);
+}
+
+/* ── Form body scroll area ────────────────────────── */
+
+.form-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+}
+.form-body::-webkit-scrollbar { width: 4px; }
+.form-body::-webkit-scrollbar-thumb { background: #c8d2e4; border-radius: 4px; }
+
+/* ── Form Cards ──────────────────────────────────── */
+
+.form-card {
+    background: #ffffff;
+    border: 1px solid #dce3ef;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+}
+.form-card:last-child { margin-bottom: 0; }
+
+.form-card-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #1a3a6b;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eaeff8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0.7;
+}
+
+/* ── Field layout ────────────────────────────────── */
+
+.field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.field-row.single { grid-template-columns: 1fr; }
+.field-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+.field-row:last-child { margin-bottom: 0; }
+
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+
+.field-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #7a8daf;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.field-input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #d4daea;
+    border-radius: 4px;
+    background: #f7f9fc;
+    color: #1a3a6b;
+    font-size: 13px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-weight: 500;
+    outline: none;
+    transition: border-color .15s, background .15s;
+    box-sizing: border-box;
+}
+.field-input:focus { border-color: #1a3a6b; background: #fff; }
+.field-input[readonly], .field-input:disabled {
+    background: #f2f5fb;
+    color: #2a4070;
+    cursor: default;
+    border-color: #e0e6f0;
+}
+.field-input.mono {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.3px;
+}
+
+/* ── Segmented radio buttons ─────────────────────── */
+
+.radio-row {
+    display: flex;
+    border: 1px solid #d4daea;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f2f5fb;
+}
+
+.radio-opt { flex: 1; position: relative; }
+
+.radio-opt input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0; height: 0;
+    pointer-events: none;
+}
+
+.radio-opt label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #5a70a0;
+    cursor: pointer;
+    border-right: 1px solid #d4daea;
+    transition: background .12s, color .12s;
+    text-align: center;
+    white-space: nowrap;
+    font-family: inherit;
+}
+.radio-opt:last-child label { border-right: none; }
+
+.radio-opt input:checked + label {
+    background: #1a3a6b;
+    color: #ffffff;
+    font-weight: 600;
+}
+.radio-opt input:disabled + label { cursor: default; }
+.radio-opt input:not(:disabled) + label:hover { background: #e0e8f5; color: #1a3a6b; }
+.radio-opt input:checked:not(:disabled) + label:hover { background: #1a3a6b; }
+
+/* ── Empty state ─────────────────────────────────── */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    gap: 10px;
+    color: #8a9bbf;
+    text-align: center;
+}
+.empty-state-icon { font-size: 36px; opacity: 0.35; }
+.empty-state-text { font-size: 13.5px; font-weight: 600; color: #6a7fa8; }
+.empty-state-sub  { font-size: 12px; }
+
+/* ════════════════════════════════════════════════════
+   FOOTER BUTTONS
+   ════════════════════════════════════════════════════ */
+
+.form-footer {
+    padding: 11px 20px;
+    background: #ffffff;
+    border-top: 1px solid #dce3ef;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.footer-spacer { flex: 1; }
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    cursor: pointer;
+    transition: background .15s, box-shadow .15s, transform .1s;
+    white-space: nowrap;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+.btn-primary {
+    background: #1a3a6b;
+    color: #ffffff;
+}
+.btn-primary:hover:not(:disabled) { background: #142e58; }
+
+.btn-ghost {
+    background: #edf1f9;
+    color: #4a6090;
+    border: 1px solid #d4daea;
+}
+.btn-ghost:hover:not(:disabled) { background: #dce6f4; color: #1a3a6b; }
+
+.btn-amber {
+    background: #fff8ee;
+    color: #a06010;
+    border: 1px solid #f0d090;
+}
+.btn-amber:hover:not(:disabled) { background: #a06010; color: #fff; }
+
+.btn-icon { font-size: 13px; }
+
+/* ════════════════════════════════════════════════════
+   CONTEXT MENU
+   ════════════════════════════════════════════════════ */
+
+#ctx-menu {
+    position: fixed;
+    background: #ffffff;
+    border: 1px solid #cdd5e4;
+    border-radius: 5px;
+    box-shadow: 0 6px 20px rgba(15,32,68,.18);
+    min-width: 130px;
+    z-index: 9999;
+    padding: 3px;
+    display: none;
+}
+
+.ctx-item {
+    padding: 7px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a3a6b;
+    transition: background .1s;
+}
+.ctx-item:hover { background: #eaeff8; }
+.ctx-item.danger { color: #b52020; }
+.ctx-item.danger:hover { background: #fef2f2; }
+.ctx-icon { font-size: 12px; font-weight: 700; width: 16px; text-align: center; }
+
+/* ════════════════════════════════════════════════════
+   MODAL
+   ════════════════════════════════════════════════════ */
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(8,18,40,.45);
+    z-index: 5000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.active { display: flex; }
+
+.modal-box {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 20px 50px rgba(15,32,68,.22);
+    width: 440px;
+    max-width: 95vw;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: #1a3a6b;
+    color: #ffffff;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header-title { font-size: 13px; font-weight: 600; }
+
+.modal-close {
+    background: rgba(255,255,255,.12);
+    border: none;
+    color: rgba(255,255,255,.7);
+    width: 26px; height: 26px;
+    border-radius: 4px;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .12s;
+}
+.modal-close:hover { background: rgba(255,255,255,.22); color: #fff; }
+
+.modal-body { padding: 18px; }
+
+.modal-field { margin-bottom: 13px; }
+.modal-field:last-child { margin-bottom: 0; }
+
+.modal-field label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #7a8daf;
+    margin-bottom: 4px;
+}
+
+.modal-field input,
+.modal-field select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #d4daea;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1a3a6b;
+    background: #f7f9fc;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color .15s;
+}
+.modal-field input:focus, .modal-field select:focus {
+    border-color: #1a3a6b;
+    background: #fff;
+}
+.modal-field input[readonly] { color: #6a80a8; }
+.modal-field .radio-row { background: #f2f5fb; }
+
+.modal-footer {
+    padding: 12px 18px;
+    border-top: 1px solid #e8ecf4;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    background: #f7f9fc;
+}
+
+/* ════════════════════════════════════════════════════
+   LOADING / TOAST / ERROR
+   ════════════════════════════════════════════════════ */
+
+.loading-overlay {
+    display: none; position: absolute;
+    inset: 0; background: rgba(240,243,248,.65);
+    z-index: 50; justify-content: center; align-items: center;
+}
+.loading-overlay.active { display: flex; }
+
+.spinner {
+    width: 26px; height: 26px;
+    border: 2.5px solid #d0d8e8;
+    border-top-color: #1a3a6b;
+    border-radius: 50%;
+    animation: spin .65s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#toast {
+    position: fixed; bottom: 22px; right: 22px;
+    padding: 11px 16px; border-radius: 5px;
+    font-size: 13px; font-weight: 500;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    box-shadow: 0 6px 20px rgba(15,32,68,.2);
+    z-index: 9999; opacity: 0; transform: translateY(6px);
+    transition: all .22s ease; min-width: 180px; max-width: 320px;
+    pointer-events: none; display: flex; align-items: center; gap: 7px;
+}
+#toast.show    { opacity: 1; transform: translateY(0); }
+#toast.info    { background: #1a3a6b; color: #fff; }
+#toast.success { background: #1a6b32; color: #fff; }
+#toast.error   { background: #8b1a1a; color: #fff; }
+
+#detail-error {
+    display: none; background: #fff5f5; color: #8b1a1a;
+    padding: 9px 20px; font-size: 12px; font-weight: 500;
+    border-bottom: 1px solid #fcc; align-items: center; gap: 6px;
+}
+#detail-error.visible { display: flex; }
+
+/* ── Edit mode ─────────────────────────────────────────────── */
+
+/* Editable name field — subtle highlight when editable */
+.field-input.editable {
+    border-color: #1a3a6b;
+    background: #ffffff;
+    cursor: text;
+}
+.field-input.editable:hover {
+    border-color: #1a3a6b;
+    box-shadow: 0 0 0 3px rgba(26,58,107,.10);
+}
+
+/* Edit mode badge */
+.mode-badge.edit {
+    background: rgba(26,120,60,.15);
+    color: #1a5c30;
+    border: 1px solid rgba(26,120,60,.25);
+    animation: pulse-edit 2s ease infinite;
+}
+.mode-badge.edit::before {
+    content: '✏ ';
+}
+@keyframes pulse-edit {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.7; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   MASTER TAB BAR — Conventional tab style
+   Tabs sit on a dark base; active tab appears as a raised
+   white card that connects flush to the content panel below.
+   ════════════════════════════════════════════════════════════ */
+
+.master-tab-bar {
+    display: flex;
+    align-items: flex-end;          /* tabs hang from the bottom */
+    background: #0c1c3a;
+    flex-shrink: 0;
+    padding: 0 16px;
+    gap: 4px;
+    border-bottom: none;
+}
+
+.master-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 24px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,.5);
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    transition: background .15s, color .15s;
+    outline: none;
+    white-space: nowrap;
+    position: relative;
+    bottom: 0;
+}
+
+.master-tab .tab-icon {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.master-tab .tab-label {
+    font-size: 12.5px;
+    font-weight: 500;
+}
+
+.master-tab:hover:not(.active) {
+    background: rgba(255,255,255,.12);
+    color: rgba(255,255,255,.8);
+}
+
+/* ── Active tab — raised white card flush to panel ────────── */
+.master-tab.active {
+    background: #f0f3f8;            /* matches .account-page background */
+    color: #1a3a6b;
+    font-weight: 700;
+    border-color: #c8d4e8;
+    border-bottom: 2px solid #f0f3f8;  /* hides the border-bottom seam */
+    z-index: 1;
+}
+
+.master-tab.active .tab-icon {
+    opacity: 1;
+}
+
+/* ── Page wrapper: tab bar + panels fill exactly the space below topbar ── */
+.master-page-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 76px);   /* 76px = topbar height */
+    overflow: hidden;
+    background: #0c1c3a;          /* matches tab bar so seam is invisible */
+}
+
+/* Thin border across the full width — sits between tab bar and panels.
+   Active tab's border-bottom colour matches panel bg, hiding the seam. */
+.master-tab-bar::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 1px;
+    background: #c8d4e8;
+    pointer-events: none;
+}
+.master-tab-bar {
+    position: relative;           /* needed for ::after */
+}

@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Account Master</title>
+    <link rel="stylesheet" th:href="@{/css/topbar.css}">
+    <link rel="stylesheet" th:href="@{/css/account.css}">
+</head>
+<body>
+
+<div th:replace="fragments/topbar :: topbar"></div>
+
+<!-- ── Context Menu ──────────────────────────────────────── -->
+<div id="ctx-menu">
+    <div class="ctx-item" id="ctx-add" onclick="ctxAdd()">
+        <span class="ctx-icon">＋</span> Add
+    </div>
+    <div class="ctx-item danger" id="ctx-delete" onclick="ctxDelete()">
+        <span class="ctx-icon">✕</span> Delete
+    </div>
+</div>
+
+<!-- ── Add Account Modal ──────────────────────────────────── -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-header-title" id="modal-title">Add Account</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+
+            <!-- Row 1: Parent Account (full width) -->
+            <div class="modal-field">
+                <label>Parent Account</label>
+                <input type="text" id="modal-parent" readonly class="mono">
+            </div>
+            <!-- acGroup auto-set by ctxAdd(): level 3 = G (Group), level 4 = A (Account) -->
+            <input type="hidden" id="modal-acgroup" value="A">
+
+            <!-- Row 2: Account Code + Balance Type -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="modal-field">
+                    <label>Account Code <span style="color:#b52020">*</span></label>
+                    <input type="text" id="modal-code" maxlength="6"
+                           placeholder="e.g. CASH01"
+                           oninput="toUpperCaseField(this)">
+                </div>
+                <div class="modal-field">
+                    <label>Balance Type</label>
+                    <select id="modal-balance">
+                        <option value="B">Both</option>
+                        <option value="D">Debit Balance</option>
+                        <option value="C">Credit Balance</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Row 3: Account Name (full width) -->
+            <div class="modal-field">
+                <label>Account Name <span style="color:#b52020">*</span></label>
+                <input type="text" id="modal-name" maxlength="50"
+                       placeholder="Full account name"
+                       oninput="toUpperCaseField(this)">
+            </div>
+
+            <!-- Row 4: Type dropdown + Dollar A/c radio -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="modal-field">
+                    <label>Type <span style="color:#b52020">*</span></label>
+                    <!--
+                        Saved to: c_accounttype
+                        c_acgroup is derived automatically:
+                          * or # → G (Group)
+                          all others → A (Account)
+                    -->
+                    <select id="modal-actype">
+                        <option value="">— Select —</option>
+                        <option value="A">Asset</option>
+                        <option value="L">Liability</option>
+                        <option value="I">Income</option>
+                        <option value="E">Expense</option>
+                        <option value="F">Funding Control A/C</option>
+                        <option value="O">Other Control A/C</option>
+                        <option value="S">Special Account</option>
+                        <option value="*">User Created Group</option>
+                        <option value="#">System Created Group</option>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>Dollar A/c</label>
+                    <div class="radio-row">
+                        <div class="radio-opt">
+                            <input type="radio" name="modal-dollar" id="m-no" value="N" checked>
+                            <label for="m-no">No</label>
+                        </div>
+                        <div class="radio-opt">
+                            <input type="radio" name="modal-dollar" id="m-yes" value="Y">
+                            <label for="m-yes">Yes</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 5: Applicable to Branches -->
+            <div class="modal-field">
+                <label>Applicable to Branches</label>
+                <!--
+                    Saved to: c_cat
+                    A = All Branches
+                    S = Some Branches
+                -->
+                <div class="radio-row">
+                    <div class="radio-opt">
+                        <input type="radio" name="modal-cat" id="m-cat-all" value="A" checked>
+                        <label for="m-cat-all">All Branches</label>
+                    </div>
+                    <div class="radio-opt">
+                        <input type="radio" name="modal-cat" id="m-cat-some" value="S">
+                        <label for="m-cat-some">Some Branches</label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveNewAccount()">
+                <span class="btn-icon">💾</span> Save Account
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ── Delete Confirm Modal ──────────────────────────────── -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box" style="width:400px">
+        <div class="modal-header" style="background:#7a1a1a">
+            <div class="modal-header-title">⚠ Confirm Delete</div>
+            <button class="modal-close" onclick="closeConfirmModal()">✕</button>
+        </div>
+        <div class="modal-body" style="padding:20px 22px">
+            <div style="display:flex;align-items:flex-start;gap:14px">
+                <div style="font-size:28px;line-height:1;flex-shrink:0">🗑️</div>
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:#1a1a2e;margin-bottom:6px"
+                         id="confirm-title">Delete Account?</div>
+                    <div style="font-size:12.5px;color:#5a6080;line-height:1.6"
+                         id="confirm-msg">All child accounts will also be permanently removed.</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="background:#fff5f5;border-top:1px solid #f5caca">
+            <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
+            <button class="btn" id="confirm-ok-btn"
+                    style="background:#8b1a1a;color:#fff;margin-left:8px"
+                    onclick="confirmDeleteExecute()">
+                <span class="btn-icon">🗑️</span> Delete
+            </button>
+        </div>
+    </div>
+</div>
+<input type="hidden" id="cfg-company" th:value="${companyCode}">
+<input type="hidden" id="cfg-finyr"   th:value="${finyr}">
+
+<!-- ════════════════════════════════════════════════════════
+     PAGE WRAPPER — flex column, fills 100vh minus topbar
+     Tab bar takes natural height; panels fill the rest (flex:1)
+     ════════════════════════════════════════════════════════ -->
+<div class="master-page-wrapper">
+<br>
+    <!-- ── TAB BAR ──────────────────────────────────────────── -->
+    <div class="master-tab-bar">
+        <button class="master-tab active" id="tab-account"
+                onclick="window.location.href='/masters/account'">
+            <span class="tab-icon">📒</span>
+            <span class="tab-label">Account Master</span>
+        </button>
+        <button class="master-tab" id="tab-post"
+                onclick="window.location.href='/masters/post'">
+            <span class="tab-icon">📌</span>
+            <span class="tab-label">Post Master</span>
+        </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         MAIN LAYOUT — ACCOUNT MASTER
+         ════════════════════════════════════════════════════════ -->
+    <div class="account-page">
+
+        <!-- LEFT: TREE -->
+        <div class="tree-panel">
+            <div class="tree-panel-header">
+                <span class="ph-icon">🌳</span>
+                Chart of Accounts
+            </div>
+            <div class="tree-search">
+                <input type="text" id="treeSearch" placeholder="Search accounts…"
+                       oninput="filterTree(this.value)">
+            </div>
+            <div class="tree-container" id="treeContainer">
+                <div style="padding:24px 16px;color:#8a97b5;font-size:12px;text-align:center">
+                    <div style="font-size:28px;margin-bottom:8px">⏳</div>
+                    Loading accounts…
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: FORM -->
+        <div class="form-panel" style="position:relative;">
+            <div class="loading-overlay" id="formLoading"><div class="spinner"></div></div>
+
+            <!-- Sub-header -->
+            <div class="form-panel-header">
+                <span class="header-icon">📋</span>
+                <span class="form-panel-title">Account Details</span>
+                <span style="color:rgba(255,255,255,.3);margin:0 8px;font-size:14px;">|</span>
+                <span class="breadcrumb" id="breadcrumb"></span>
+                <span class="header-spacer"></span>
+            </div>
+
+            <!-- Error banner -->
+            <div id="detail-error"></div>
+
+            <!-- Form body -->
+            <div class="form-body" id="formBody">
+
+                <!-- Empty state -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">🗂️</div>
+                    <div class="empty-state-text">No account selected</div>
+                    <div class="empty-state-sub">Click any node in the tree to view its details</div>
+                </div>
+
+                <!-- Detail content -->
+                <div id="detailContent" style="display:none">
+
+                    <!-- CARD 1: Identity -->
+                    <div class="form-card">
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label class="field-label">Parent Account</label>
+                                <input type="text" class="field-input mono" id="fld-parent" readonly placeholder="—">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Account Code</label>
+                                <input type="text" class="field-input mono" id="fld-code" readonly placeholder="—">
+                            </div>
+                        </div>
+                        <div class="field-row double">
+                            <div class="field-group">
+                                <label class="field-label">
+                                    Account Name
+                                    <span id="name-edit-hint" style="display:none;
+                                    font-size:10px; font-weight:400; color:#1a3a6b;
+                                    margin-left:6px; opacity:0.6;"></span>
+                                </label>
+                                <input type="text" class="field-input" id="fld-name"
+                                       readonly placeholder="—"
+                                       maxlength="50"
+                                       oninput="handleNameInput(this);"
+                                       onclick="onNameClick()">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Creation Date</label>
+                                <input type="text" class="field-input" id="fld-date" readonly placeholder="—">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 2: Classification -->
+                    <div class="form-card">
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label class="field-label">Account / Group</label>
+                                <div class="radio-row">
+                                    <div class="radio-opt">
+                                        <input type="radio" name="acgroup" id="radio-account" value="A" disabled>
+                                        <label for="radio-account">Account</label>
+                                    </div>
+                                    <div class="radio-opt">
+                                        <input type="radio" name="acgroup" id="radio-group" value="G" disabled>
+                                        <label for="radio-group">Group</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Type</label>
+                                <input type="text" class="field-input" id="fld-type" readonly placeholder="—">
+                            </div>
+                        </div>
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label class="field-label">Balance</label>
+                                <input type="text" class="field-input" id="fld-balance" readonly placeholder="—">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Dollar Account</label>
+                                <div class="radio-row">
+                                    <div class="radio-opt">
+                                        <input type="radio" name="dollarac" id="radio-dollar-yes" value="Y" disabled>
+                                        <label for="radio-dollar-yes">Yes</label>
+                                    </div>
+                                    <div class="radio-opt">
+                                        <input type="radio" name="dollarac" id="radio-dollar-no" value="N" disabled checked>
+                                        <label for="radio-dollar-no">No</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 3: Applicability -->
+                    <div class="form-card">
+                        <div class="field-row single">
+                            <div class="field-group">
+                                <label class="field-label">Applicable to Branches</label>
+                                <div class="radio-row">
+                                    <div class="radio-opt">
+                                        <input type="radio" name="applicable" id="radio-allbranch" value="all" disabled checked>
+                                        <label for="radio-allbranch">All Branches</label>
+                                    </div>
+                                    <div class="radio-opt">
+                                        <input type="radio" name="applicable" id="radio-somebranch" value="some" disabled>
+                                        <label for="radio-somebranch">Some Branches</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /detailContent -->
+            </div><!-- /form-body -->
+
+            <!-- Footer -->
+            <div class="form-footer">
+                <button class="btn btn-ghost" id="btn-apply" disabled onclick="applyToBranches()">
+                    <span class="btn-icon">🏢</span> Apply to Branches
+                </button>
+                <button class="btn btn-amber" id="btn-opening" disabled onclick="openingBalance()">
+                    <span class="btn-icon">💰</span> Opening Balance
+                </button>
+                <span class="footer-spacer"></span>
+                <button class="btn btn-ghost" id="btn-cancel" style="display:none" onclick="cancelEdit()">
+                    Cancel
+                </button>
+                <button class="btn btn-primary" id="btn-save" disabled onclick="saveCurrentAccount()">
+                    <span class="btn-icon">💾</span> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div><!-- /master-page-wrapper -->
+
+<script>
+
+    var COMPANY_CODE  = document.getElementById('cfg-company').value ;
+    var FINYR         = document.getElementById('cfg-finyr').value  ;
+
+    var currentNode   = null;
+    var ctxTargetNode = null;
+    var originalName  = '';
+    var isEditMode    = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTree();
+        document.addEventListener('click',       hideCtxMenu);
+        document.addEventListener('contextmenu', hideCtxMenu);
+    });
+
+    // ════════════════════════════════════════════════════════════
+    //  TREE
+    // ════════════════════════════════════════════════════════════
+
+    function loadTree() {
+        var container = document.getElementById('treeContainer');
+        var url = '/masters/api/account/tree?companyCode=' +
+                  encodeURIComponent(COMPANY_CODE) + '&finyr=' + FINYR;
+        container.innerHTML =
+            '<div style="padding:24px 16px;color:#8a97b5;font-size:12px;text-align:center">' +
+            '<div style="font-size:28px;margin-bottom:8px">⏳</div>Loading…</div>';
+        fetch(url)
+        .then(function(r) { return r.text(); })
+        .then(function(text) {
+            var data = JSON.parse(text);
+            if (data.error) throw new Error(data.error);
+            container.innerHTML = '';
+            container.appendChild(renderNode(data, true));
+        })
+        .catch(function(err) {
+            container.innerHTML =
+                '<div style="padding:20px;color:#b52020;font-size:12px;text-align:center">' +
+                '⚠️ ' + err.message + '</div>';
+        });
+    }
+
+    function renderNode(node, expand) {
+        var children  = Array.isArray(node.children) ? node.children : [];
+        var hasKids   = children.length > 0;
+        var labelText = String(node.accountName  || node.accountCode || '').trim();
+        var code      = String(node.accountCode  || '').trim();
+        var level     = parseInt(node.level, 10) || 1;
+
+        var wrapper = document.createElement('div');
+        wrapper.className      = 'tree-node';
+        wrapper.dataset.code   = code;
+        wrapper.dataset.level  = level;
+        wrapper.dataset.type   = String(node.accountType || '').trim();
+        wrapper.dataset.name   = labelText;
+        wrapper.dataset.parent = String(node.parent      || '').trim();
+
+        var row = document.createElement('div');
+        row.className = 'tree-node-row';
+
+        var toggle = document.createElement('span');
+        toggle.className   = 'toggle-btn' + (hasKids ? '' : ' leaf');
+        toggle.textContent = hasKids ? (expand ? '▼' : '▶') : '▶';
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var cd = wrapper.querySelector(':scope > .node-children');
+            if (!cd) return;
+            toggle.textContent = cd.classList.toggle('collapsed') ? '▶' : '▼';
+        });
+
+        var icon = document.createElement('span');
+        icon.className   = 'node-icon';
+        icon.textContent = level === 1 ? '🌐' : (level === 2 ? (hasKids ? '📂' : '📁') : (hasKids ? '📂' : '📄'));
+
+        var lbl = document.createElement('span');
+        lbl.className   = 'node-label';
+        lbl.textContent = labelText;
+        lbl.title       = code ? '[' + code + '] ' + labelText : labelText;
+
+        row.appendChild(toggle);
+        row.appendChild(icon);
+        row.appendChild(lbl);
+
+        if (level >= 2 && code) {
+            var badge = document.createElement('span');
+            badge.className   = 'node-badge';
+            badge.textContent = code;
+            row.appendChild(badge);
+        }
+
+        row.addEventListener('click', function(e) { e.stopPropagation(); selectNode(row, node); });
+        row.addEventListener('contextmenu', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            handleContextMenu(e, node);
+        });
+        wrapper.appendChild(row);
+
+        if (hasKids) {
+            var cd = document.createElement('div');
+            cd.className = 'node-children' + (expand ? '' : ' collapsed');
+            children.forEach(function(child) { cd.appendChild(renderNode(child, false)); });
+            wrapper.appendChild(cd);
+        }
+        return wrapper;
+    }
+
+    function selectNode(rowEl, node) {
+        if (isEditMode) cancelEdit();
+        document.querySelectorAll('.tree-node-row.selected')
+                .forEach(function(r) { r.classList.remove('selected'); });
+        rowEl.classList.add('selected');
+        var anc = rowEl.closest('.node-children');
+        while (anc) {
+            anc.classList.remove('collapsed');
+            var pr = anc.parentElement && anc.parentElement.querySelector(':scope > .tree-node-row');
+            if (pr) { var tb = pr.querySelector('.toggle-btn'); if (tb && !tb.classList.contains('leaf')) tb.textContent = '▼'; }
+            anc = anc.parentElement && anc.parentElement.closest('.node-children');
+        }
+        currentNode = node;
+        loadAccountDetail(node.accountCode);
+    }
+
+    function filterTree(query) {
+        var q = query.trim().toLowerCase();
+
+        // ── Clear search: restore all nodes and collapse back to level 1 ──
+        if (!q) {
+            document.querySelectorAll('.tree-node').forEach(function(el) {
+                el.style.display = '';
+            });
+            // Re-collapse all child groups (keep root expanded)
+            document.querySelectorAll('.node-children').forEach(function(el) {
+                // Only collapse if not the direct children of root (level-2 stay visible)
+                var parentNode = el.closest('.tree-node');
+                if (parentNode && parseInt(parentNode.dataset.level || 0) >= 2) {
+                    el.classList.add('collapsed');
+                    var tb = parentNode.querySelector(':scope > .tree-node-row .toggle-btn');
+                    if (tb && !tb.classList.contains('leaf')) tb.textContent = '▶';
+                }
+            });
+            return;
+        }
+
+        // ── First pass: mark each node as match or no-match ──────────────
+        var allNodes = document.querySelectorAll('.tree-node');
+        allNodes.forEach(function(el) {
+            var name = (el.dataset.name || '').toLowerCase();
+            var code = (el.dataset.code || '').toLowerCase();
+            el._matched = name.includes(q) || code.includes(q);
+        });
+
+        // ── Second pass: any node that has a matched descendant must show ─
+        // Walk bottom-up: if a child matched, mark parent as needing to show
+        allNodes.forEach(function(el) {
+            if (el._matched) {
+                // Walk up through ancestor .tree-node elements
+                var ancestor = el.parentElement && el.parentElement.closest('.tree-node');
+                while (ancestor) {
+                    ancestor._hasMatchedChild = true;
+                    ancestor = ancestor.parentElement &&
+                               ancestor.parentElement.closest('.tree-node');
+                }
+            }
+        });
+
+        // ── Third pass: apply visibility and expand/collapse ──────────────
+        allNodes.forEach(function(el) {
+            var show = el._matched || el._hasMatchedChild;
+            el.style.display = show ? '' : 'none';
+
+            // Expand node-children so matched descendants are visible
+            if (show) {
+                var cd = el.querySelector(':scope > .node-children');
+                if (cd) {
+                    cd.classList.remove('collapsed');
+                    var tb = el.querySelector(':scope > .tree-node-row .toggle-btn');
+                    if (tb && !tb.classList.contains('leaf')) tb.textContent = '▼';
+                }
+            }
+
+            // Clean up temp flags
+            delete el._matched;
+            delete el._hasMatchedChild;
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  CONTEXT MENU
+    // ════════════════════════════════════════════════════════════
+
+    function handleContextMenu(e, node) {
+        ctxTargetNode = node;
+        var lvl   = parseInt(node.level, 10) || 1;
+        var isSys = String(node.accountType || '').trim() === '#';
+        if (lvl <= 1) return;
+
+        var addItem = document.getElementById('ctx-add');
+        var delItem = document.getElementById('ctx-delete');
+
+        if      (lvl === 2) { addItem.style.display = 'flex'; delItem.style.display = 'none'; }
+        else if (lvl === 3) { addItem.style.display = 'flex'; delItem.style.display = isSys ? 'none' : 'flex'; }
+        else                { addItem.style.display = 'none'; delItem.style.display = isSys ? 'none' : 'flex'; }
+
+        if (addItem.style.display === 'none' && delItem.style.display === 'none') return;
+
+        var menu = document.getElementById('ctx-menu');
+        menu.style.visibility = 'hidden'; menu.style.display = 'block';
+        var mW = menu.offsetWidth, mH = menu.offsetHeight;
+        menu.style.visibility = '';
+        var rect = e.currentTarget.getBoundingClientRect();
+        var left = rect.right + 4, top = rect.top + rect.height / 2 - mH / 2;
+        if (left + mW > window.innerWidth  - 8) left = rect.left - mW - 4;
+        if (top  + mH > window.innerHeight - 8) top  = window.innerHeight - mH - 8;
+        if (top < 4) top = 4;
+        menu.style.left = left + 'px'; menu.style.top = top + 'px';
+    }
+
+    function hideCtxMenu() { var m = document.getElementById('ctx-menu'); if (m) m.style.display = 'none'; }
+
+    function ctxAdd() {
+        hideCtxMenu();
+        if (!ctxTargetNode) return;
+        var parentLvl = parseInt(ctxTargetNode.level, 10);
+        var newLvl    = parentLvl + 1;
+
+        // Level 3 = Group (G), Level 4 = Account (A)
+        // Rule: only level 2 nodes can add children (→ level 3 = Group)
+        //        only level 3 nodes can add children (→ level 4 = Account)
+        var acGroup = (newLvl === 3) ? 'G' : 'A';
+        document.getElementById('modal-acgroup').value = acGroup;
+
+        document.getElementById('modal-title').textContent =
+            'New ' + (acGroup === 'G' ? 'Group' : 'Account') +
+            ' (Level ' + newLvl + ') — under "' +
+            (ctxTargetNode.accountName || ctxTargetNode.accountCode) + '"';
+        document.getElementById('modal-parent').value  = ctxTargetNode.accountCode;
+        document.getElementById('modal-code').value    = '';
+        document.getElementById('modal-name').value    = '';
+        document.getElementById('modal-actype').value  = '';
+        document.getElementById('m-no').checked        = true;
+        document.getElementById('m-cat-all').checked   = true;
+        document.getElementById('modal-balance').value = 'B';
+        document.getElementById('addModal').classList.add('active');
+        setTimeout(function() { document.getElementById('modal-code').focus(); }, 80);
+    }
+
+    function ctxDelete() {
+        hideCtxMenu();
+        if (!ctxTargetNode) return;
+        var label = (ctxTargetNode.accountName || ctxTargetNode.accountCode) +
+                    ' [' + ctxTargetNode.accountCode + ']';
+        document.getElementById('confirm-title').textContent = 'Delete "' + label + '"?';
+        document.getElementById('confirm-msg').textContent   =
+            'This account and all its child accounts will be permanently removed. This action cannot be undone.';
+        document.getElementById('confirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+    }
+
+    function confirmDeleteExecute() {
+        closeConfirmModal();
+        if (!ctxTargetNode) return;
+        var btn = document.getElementById('confirm-ok-btn');
+        btn.disabled = true;
+        btn.textContent = 'Deleting…';
+
+        fetch('/masters/api/account/delete?companyCode=' + encodeURIComponent(COMPANY_CODE) +
+              '&accountCode=' + encodeURIComponent(ctxTargetNode.accountCode),
+              { method: 'DELETE' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">🗑️</span> Delete';
+            if (d.success) { showToast('✓ Account deleted', 'success'); clearForm(); loadTree(); }
+            else showToast('✕ ' + (d.error || 'Delete failed'), 'error');
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">🗑️</span> Delete';
+            showToast('✕ ' + err.message, 'error');
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  MODAL
+    // ════════════════════════════════════════════════════════════
+
+    function closeModal() { document.getElementById('addModal').classList.remove('active'); }
+
+    function saveNewAccount() {
+        var code      = document.getElementById('modal-code').value.trim();
+        var name      = document.getElementById('modal-name').value.trim();
+        var parent    = document.getElementById('modal-parent').value.trim();
+        var acType    = document.getElementById('modal-actype').value;       // c_accounttype
+        var balance   = document.getElementById('modal-balance').value;
+        var dollar    = document.querySelector('input[name="modal-dollar"]:checked').value;
+        var category  = document.querySelector('input[name="modal-cat"]:checked').value; // c_cat
+
+        // ── Validation ──────────────────────────────────────────
+        if (!code)   { showToast('Account Code is required', 'error'); return; }
+        if (!name)   { showToast('Account Name is required', 'error'); return; }
+        if (!acType) { showToast('Please select a Type', 'error'); return; }
+
+        // ── acGroup comes from hidden input set by ctxAdd() ─────
+        // Level 3 → G (Group), Level 4 → A (Account)
+        var acGroup = document.getElementById('modal-acgroup').value || 'A';
+
+        fetch('/masters/api/account/save', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                companyCode:  COMPANY_CODE,
+                finYear:      parseFloat(FINYR),
+                accountCode:  code,
+                accountName:  name,
+                parent:       parent,
+                acGroup:      acGroup,      // c_acgroup  — derived from type
+                accountType:  acType,       // c_accounttype — from dropdown
+                balanceCheck: balance,
+                dollarAc:     dollar,
+                category:     category,     // c_cat — All=A / Some=S
+                level:        parseInt(ctxTargetNode.level, 10) + 1
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) { closeModal(); showToast('✓ Account created', 'success'); clearForm(); loadTree(); }
+            else showToast('✕ ' + (d.error || 'Save failed'), 'error');
+        })
+        .catch(function(err) { showToast('✕ ' + err.message, 'error'); });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  FORM — DETAIL
+    // ════════════════════════════════════════════════════════════
+
+    function loadAccountDetail(accountCode) {
+        if (!accountCode) return;
+        var errBanner = document.getElementById('detail-error');
+        errBanner.classList.remove('visible');
+        document.getElementById('formLoading').classList.add('active');
+
+        fetch('/masters/api/account/detail?companyCode=' + encodeURIComponent(COMPANY_CODE) +
+              '&finyr=' + FINYR + '&accountCode=' + encodeURIComponent(accountCode))
+        .then(function(r) { return r.text(); })
+        .then(function(text) {
+            var d = JSON.parse(text);
+            if (d.error) {
+                errBanner.textContent = '⚠ ' + d.error;
+                errBanner.classList.add('visible');
+                return;
+            }
+            populateForm(d);
+        })
+        .catch(function(err) {
+            errBanner.textContent = '⚠ Failed to load: ' + err.message;
+            errBanner.classList.add('visible');
+        })
+        .finally(function() {
+            document.getElementById('formLoading').classList.remove('active');
+        });
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  BREADCRUMB — full path from root to selected account
+    //
+    //  Walks up the tree DOM using data-parent / data-name attributes
+    //  already set on every .tree-node wrapper.
+    //  Skips the root node (level 1) — starts from level 2 group.
+    //  Result: "Asset → QWSSS → SSSSSS"
+    // ════════════════════════════════════════════════════════════
+
+    function buildFullPath(accountCode) {
+        var path  = [];
+        var code  = accountCode;
+
+        while (code) {
+            var el = document.querySelector('.tree-node[data-code="' + code + '"]');
+            if (!el) break;
+
+            var lvl = parseInt(el.dataset.level || 0, 10);
+            if (lvl <= 1) break;           // stop before root
+
+            path.unshift(el.dataset.name || code);
+            code = el.dataset.parent || '';
+        }
+
+        return path;
+    }
+
+    function setBreadcrumb(accountCode, accountName) {
+        var bc = document.getElementById('breadcrumb');
+        if (!bc) return;
+
+        var path = buildFullPath(accountCode);
+
+        if (path.length === 0) {
+            bc.innerHTML = '/ <span>' + escBc(accountName || accountCode) + '</span>';
+            return;
+        }
+
+        // Build:  Asset → QWSSS → SSSSSS
+        var html = path.map(function(p, i) {
+            if (i === path.length - 1) {
+                // Last segment = current account — highlighted
+                return '<span style="color:#fff;font-weight:600;">' + escBc(p) + '</span>';
+            }
+            // Ancestor segments — muted
+            return '<span style="color:rgba(255,255,255,.55);">' + escBc(p) + '</span>';
+        }).join('<span style="color:rgba(255,255,255,.4);margin:0 5px;">→</span>');
+
+        bc.innerHTML = html;
+    }
+
+    function escBc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function populateForm(d) {
+        document.getElementById('emptyState').style.display    = 'none';
+        document.getElementById('detailContent').style.display = '';
+
+        setVal('fld-parent',  d.parent      || '');
+        setVal('fld-code',    d.accountCode || '');
+        setVal('fld-name',    d.accountName || '');
+        setVal('fld-type',    resolveTypeName(d.accountType));
+        setVal('fld-balance', resolveBalance(d.balanceCheck));
+        setVal('fld-date',    d.dateAdd     || '');
+
+        originalName = d.accountName || '';
+
+        var acg = String(d.acGroup  || '').trim();
+        document.getElementById('radio-account').checked    = (acg === 'A');
+        document.getElementById('radio-group').checked      = (acg === 'G');
+
+        var dol = String(d.dollarAc || 'N').trim();
+        document.getElementById('radio-dollar-yes').checked = (dol === 'Y');
+        document.getElementById('radio-dollar-no').checked  = (dol !== 'Y');
+
+        // c_cat → Applicable to Branches display
+        var cat = String(d.category || 'A').trim();   // 'A'=All Branches, 'S'=Some Branches
+        document.getElementById('radio-allbranch').checked  = (cat !== 'S');
+        document.getElementById('radio-somebranch').checked = (cat === 'S');
+
+        setBreadcrumb(d.accountCode, d.accountName || d.accountCode);
+
+        var lvl = parseInt(d.level || 0, 10);
+        var canEdit = (lvl >= 3);
+        var nameInput = document.getElementById('fld-name');
+        var nameHint  = document.getElementById('name-edit-hint');
+        if (canEdit) {
+            nameInput.removeAttribute('readonly');
+            nameInput.classList.add('editable');
+            nameHint.style.display = 'inline';
+        } else {
+            nameInput.setAttribute('readonly', true);
+            nameInput.classList.remove('editable');
+            nameHint.style.display = 'none';
+        }
+
+        setViewMode();
+        document.getElementById('btn-opening').disabled = (lvl !== 4);
+
+        // Apply to Branches: only level 4 (leaf) accounts with c_cat='S' (Some Branches)
+        // If c_cat='A' button is still enabled but shows info message on click (mirrors PB)
+        var canApply = (lvl === 4 && acg === 'A');
+        document.getElementById('btn-apply').disabled = !canApply;
+
+        // Store acGroup, category and balanceCheck on currentNode
+        if (currentNode) {
+            currentNode.acGroup      = acg;
+            currentNode.category     = cat;
+            currentNode.balanceCheck = String(d.balanceCheck || 'B').trim();
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  EDIT MODE
+    // ════════════════════════════════════════════════════════════
+
+    function onNameClick() {
+        var nameInput = document.getElementById('fld-name');
+        if (nameInput.hasAttribute('readonly')) return;
+        if (!isEditMode) setEditMode();
+    }
+
+    function toUpperCaseField(el) {
+        el.value = el.value.toUpperCase();
+    }
+
+    function handleNameInput(el) {
+        el.value = el.value.toUpperCase();
+        if (el.value.length >= 50) showToast('Maximum 50 characters allowed', 'info');
+        onNameChanged();
+    }
+
+    function onNameChanged() {
+        if (!isEditMode) return;
+        var nameInput = document.getElementById('fld-name');
+        var isDirty   = nameInput.value.trim() !== originalName.trim();
+        document.getElementById('btn-save').disabled = !isDirty || nameInput.value.trim() === '';
+    }
+
+    function setEditMode() {
+        isEditMode = true;
+
+        document.getElementById('btn-save').disabled        = true;
+        document.getElementById('btn-cancel').style.display = 'inline-flex';
+        document.getElementById('fld-name').focus();
+        document.getElementById('fld-name').select();
+    }
+
+    function setViewMode() {
+        isEditMode = false;
+
+        document.getElementById('btn-save').disabled        = true;
+        document.getElementById('btn-cancel').style.display = 'none';
+    }
+
+    function cancelEdit() {
+        setVal('fld-name', originalName);
+        setViewMode();
+    }
+
+    function saveCurrentAccount() {
+        if (!currentNode) return;
+        var newName = document.getElementById('fld-name').value.trim();
+        if (!newName) { showToast('Account name cannot be empty', 'error'); return; }
+        if (newName === originalName.trim()) { setViewMode(); return; }
+
+        document.getElementById('formLoading').classList.add('active');
+        fetch('/masters/api/account/update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                companyCode: COMPANY_CODE,
+                finYear:     parseFloat(FINYR),
+                accountCode: currentNode.accountCode,
+                accountName: newName
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) {
+                originalName = newName;
+                currentNode.accountName = newName;
+                var treeNode = document.querySelector('.tree-node[data-code="' + currentNode.accountCode + '"]');
+                if (treeNode) {
+                    var lbl = treeNode.querySelector('.node-label');
+                    if (lbl) lbl.textContent = newName;
+                    treeNode.dataset.name = newName;
+                }
+                setBreadcrumb(currentNode.accountCode, newName);
+                setViewMode();
+                showToast('✓ Account name updated', 'success');
+            } else {
+                showToast('✕ ' + (d.error || 'Update failed'), 'error');
+            }
+        })
+        .catch(function(err) { showToast('✕ ' + err.message, 'error'); })
+        .finally(function() { document.getElementById('formLoading').classList.remove('active'); });
+    }
+
+    function clearForm() {
+        document.getElementById('emptyState').style.display    = '';
+        document.getElementById('detailContent').style.display = 'none';
+        document.getElementById('detail-error').classList.remove('visible');
+        var bc = document.getElementById('breadcrumb');
+        if (bc) bc.innerHTML = '';
+        document.getElementById('btn-opening').disabled     = true;
+        document.getElementById('btn-apply').disabled       = true;
+        document.getElementById('btn-cancel').style.display = 'none';
+        document.getElementById('btn-save').disabled        = true;
+        setViewMode();
+        currentNode = null;
+    }
+
+    function setVal(id, val) { var e = document.getElementById(id); if (e) e.value = val || ''; }
+
+    function resolveTypeName(t) {
+        var map = {
+            'A': 'Asset',
+            'L': 'Liability',
+            'I': 'Income',
+            'E': 'Expense',
+            'F': 'Funding Control A/C',
+            'O': 'Other Control A/C',
+            'S': 'Special Account',
+            '*': 'User Created Group',
+            '#': 'System Created Group'
+        };
+        return map[String(t||'').trim()] || String(t||'');
+    }
+
+    function resolveBalance(b) {
+        return {'B':'Both (Dr/Cr)','D':'Debit','C':'Credit'}[String(b||'').trim()] || String(b||'');
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  APPLY TO BRANCHES
+    //
+    //  Mirrors PB logic exactly:
+    //  - Only opens if c_acgroup='A' AND c_cat='S'
+    //  - If c_cat='A' → info message (cannot change)
+    //  - Popup shows all branches; already-applied = checked+disabled
+    //  - Apply button calls fn_efa_branchac_insert for each newly checked branch
+    // ════════════════════════════════════════════════════════════
+
+    function applyToBranches() {
+        if (!currentNode) return;
+
+        // Read acGroup and category directly from the live form fields —
+        // more reliable than currentNode which may not have been updated yet
+        var acGroupChecked = document.querySelector('input[name="acgroup"]:checked');
+        var catAllChecked  = document.getElementById('radio-allbranch');
+
+        var acGroup  = acGroupChecked ? acGroupChecked.value : (currentNode.acGroup  || '');
+        var category = (catAllChecked && catAllChecked.checked) ? 'A' : 'S';
+
+        // If c_cat = 'A' (All Branches) — show info, no popup (mirrors PB messagebox)
+        if (acGroup === 'A' && category === 'A') {
+            showToast('This A/c is applicable to All Branches and cannot be changed.', 'info');
+            return;
+        }
+
+        // Only Account (A) + Some Branches (S) opens the popup
+        if (acGroup !== 'A' || category !== 'S') {
+            showToast('Apply to Branches is only available for Account type with Some Branches.', 'info');
+            return;
+        }
+
+        openBranchModal();
+    }
+
+    function openBranchModal() {
+        // Set subtitle with account code + name
+        document.getElementById('branch-modal-subtitle').textContent =
+            'A/c : ' + currentNode.accountCode + '  —  ' + (currentNode.accountName || '');
+
+        // Reset UI
+        document.getElementById('branch-loading').style.display = '';
+        document.getElementById('branch-list').style.display    = 'none';
+        document.getElementById('branch-empty').style.display   = 'none';
+        document.getElementById('branch-apply-btn').disabled    = true;
+        document.getElementById('branch-selection-count').textContent = '';
+        document.getElementById('branch-list').innerHTML = '';
+
+        document.getElementById('branchModal').classList.add('active');
+        loadBranches();
+    }
+
+    function closeBranchModal() {
+        document.getElementById('branchModal').classList.remove('active');
+    }
+
+    function loadBranches() {
+        fetch('/masters/api/account/branches?companyCode=' + encodeURIComponent(COMPANY_CODE) +
+              '&accountCode=' + encodeURIComponent(currentNode.accountCode))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) { showToast('✕ ' + data.error, 'error'); closeBranchModal(); return; }
+
+            var branches = data.branches || [];
+            document.getElementById('branch-loading').style.display = 'none';
+
+            if (branches.length === 0) {
+                document.getElementById('branch-empty').style.display = '';
+                return;
+            }
+
+            var list = document.getElementById('branch-list');
+            list.style.display = '';
+            list.innerHTML = '';
+
+            branches.forEach(function(b, idx) {
+                var isApplied = String(b.applicable || 'N').trim() === 'Y';
+                var row = document.createElement('div');
+                row.style.cssText =
+                    'display:grid;grid-template-columns:1fr 80px;' +
+                    'padding:10px 20px;border-bottom:1px solid #f0f3f8;' +
+                    'align-items:center;transition:background .1s;';
+                row.style.background = isApplied ? '#f7fcf9' : '#fff';
+
+                // Branch name cell
+                var nameCell = document.createElement('div');
+                nameCell.style.cssText = 'font-size:13px;font-weight:500;color:#1a3a6b;';
+                nameCell.innerHTML =
+                    '<span style="font-family:monospace;font-size:11.5px;' +
+                    'background:#eaeff8;padding:2px 6px;border-radius:3px;' +
+                    'margin-right:8px;color:#4a6090;">' +
+                    escHtml(String(b.c_branchcode || '').trim()) + '</span>' +
+                    escHtml(String(b.c_branchname || b.c_branchcode || '').trim());
+
+                // Checkbox cell
+                var chkCell = document.createElement('div');
+                chkCell.style.cssText = 'display:flex;justify-content:center;align-items:center;';
+
+                if (isApplied) {
+                    // Already applied — show green tick, no checkbox
+                    chkCell.innerHTML =
+                        '<span title="Already applied" ' +
+                        'style="color:#1a7a3a;font-size:16px;font-weight:700;">✓</span>';
+                    nameCell.style.opacity = '0.65';
+                } else {
+                    // Not yet applied — show checkbox
+                    var chk = document.createElement('input');
+                    chk.type      = 'checkbox';
+                    chk.className = 'branch-chk';
+                    chk.value     = String(b.c_branchcode || '').trim();
+                    chk.style.cssText =
+                        'width:17px;height:17px;cursor:pointer;accent-color:#1a3a6b;';
+                    chk.addEventListener('change', updateBranchCount);
+                    chkCell.appendChild(chk);
+                }
+
+                row.appendChild(nameCell);
+                row.appendChild(chkCell);
+                list.appendChild(row);
+            });
+
+            updateBranchCount();
+        })
+        .catch(function(err) {
+            document.getElementById('branch-loading').style.display = 'none';
+            showToast('✕ Failed to load branches: ' + err.message, 'error');
+            closeBranchModal();
+        });
+    }
+
+    function updateBranchCount() {
+        var checked = document.querySelectorAll('.branch-chk:checked').length;
+        var total   = document.querySelectorAll('.branch-chk').length;
+        var btn     = document.getElementById('branch-apply-btn');
+        var counter = document.getElementById('branch-selection-count');
+
+        btn.disabled = (checked === 0);
+        counter.textContent = checked > 0
+            ? checked + ' branch' + (checked > 1 ? 'es' : '') + ' selected'
+            : total + ' branch' + (total !== 1 ? 'es' : '') + ' available';
+    }
+
+    // Holds branches pending confirmation
+    var _pendingBranches = [];
+
+    function submitBranchApply() {
+        var checked = document.querySelectorAll('.branch-chk:checked');
+        if (checked.length === 0) return;
+
+        _pendingBranches = [];
+        checked.forEach(function(c) { _pendingBranches.push(c.value); });
+
+        var count = _pendingBranches.length;
+
+        // Show themed confirm modal instead of browser confirm()
+        document.getElementById('apply-confirm-title').textContent =
+            'Apply to ' + count + ' branch' + (count > 1 ? 'es' : '') + '?';
+        document.getElementById('apply-confirm-msg').innerHTML =
+            'Account <strong>' + escHtml(currentNode.accountCode) + '</strong> — ' +
+            escHtml(currentNode.accountName || '') +
+            '<br>will be applied to the following branch' + (count > 1 ? 'es' : '') +
+            ' for financial year <strong>' + FINYR + '</strong>:<br><br>' +
+            '<span style="font-family:monospace;font-size:12px;color:#1a4d2e">' +
+            _pendingBranches.map(function(b) { return escHtml(b); }).join(',  ') +
+            '</span>';
+
+        document.getElementById('applyConfirmModal').classList.add('active');
+    }
+
+    function closeApplyConfirmModal() {
+        document.getElementById('applyConfirmModal').classList.remove('active');
+    }
+
+    function executeApplyBranches() {
+        closeApplyConfirmModal();
+        if (_pendingBranches.length === 0) return;
+
+        var btn = document.getElementById('branch-apply-btn');
+        btn.disabled = true;
+        btn.textContent = 'Applying…';
+
+        fetch('/masters/api/account/apply-branches', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                companyCode: COMPANY_CODE,
+                accountCode: currentNode.accountCode,
+                branches:    _pendingBranches
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">✔</span> Apply Selected';
+            if (d.success) {
+                var count = _pendingBranches.length;
+                showToast('✓ Applied to ' + count + ' branch' +
+                          (count > 1 ? 'es' : ''), 'success');
+                _pendingBranches = [];
+                closeBranchModal();
+                loadBranches();   // refresh list to show newly applied branches as ✓
+            } else {
+                showToast('✕ ' + (d.error || 'Apply failed'), 'error');
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">✔</span> Apply Selected';
+            showToast('✕ ' + err.message, 'error');
+        });
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    // ════════════════════════════════════════════════════════════
+    //  OPENING BALANCE
+    //
+    //  PB logic mirrored exactly:
+    //  - Only opens if c_acgroup='A' (Account, not Group)
+    //  - retrieve: fn_efa_opbal_retrieve → split opening → dr/cr
+    //  - baltype='D' → Credit column readonly
+    //  - baltype='C' → Debit column readonly
+    //  - baltype='B' → both editable
+    //  - Save: fn_efa_opbal_update per changed row only
+    // ════════════════════════════════════════════════════════════
+
+    // Stores original values for dirty-check on save
+    var _obOriginals = [];
+    var _obBalType   = 'B';
+
+    function openingBalance() {
+        if (!currentNode) return;
+
+        // Guard: only Account type (A), not Group (G)
+        var acGroupChecked = document.querySelector('input[name="acgroup"]:checked');
+        var acGroup = acGroupChecked ? acGroupChecked.value : '';
+        if (acGroup !== 'A') {
+            showToast('Opening Balance is only available for Account type.', 'info');
+            return;
+        }
+
+        // Read baltype and account details from current node
+        _obBalType = String(currentNode.balanceCheck || 'B').trim();
+
+        // Set modal title: "Opening Balance - ACCOUNT NAME" (mirrors PB)
+        document.getElementById('ob-subtitle').textContent =
+            currentNode.accountCode + '  —  ' + (currentNode.accountName || '');
+
+        // Lock columns based on baltype
+        var drHeader = document.getElementById('ob-dr-header');
+        var crHeader = document.getElementById('ob-cr-header');
+        drHeader.style.opacity = (_obBalType === 'C') ? '0.35' : '1';
+        crHeader.style.opacity = (_obBalType === 'D') ? '0.35' : '1';
+
+        // Reset UI
+        document.getElementById('ob-loading').style.display = '';
+        document.getElementById('ob-rows').style.display    = 'none';
+        document.getElementById('ob-empty').style.display   = 'none';
+        document.getElementById('ob-rows').innerHTML        = '';
+        document.getElementById('ob-save-btn').disabled     = false;
+        _obOriginals = [];
+
+        document.getElementById('obModal').classList.add('active');
+        loadOpeningBalance();
+    }
+
+    function closeObModal() {
+        document.getElementById('obModal').classList.remove('active');
+    }
+
+    function loadOpeningBalance() {
+        fetch('/masters/api/account/opening-balance' +
+              '?companyCode=' + encodeURIComponent(COMPANY_CODE) +
+              '&accountCode=' + encodeURIComponent(currentNode.accountCode))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) {
+                showToast('✕ ' + data.error, 'error');
+                closeObModal();
+                return;
+            }
+            document.getElementById('ob-loading').style.display = 'none';
+            var rows = data.rows || [];
+
+            if (rows.length === 0) {
+                document.getElementById('ob-empty').style.display = '';
+                return;
+            }
+
+            var container = document.getElementById('ob-rows');
+            container.style.display = '';
+            container.innerHTML = '';
+
+            rows.forEach(function(row, idx) {
+                var branch  = String(row.out_branch  || '').trim();
+                var drOpen  = parseFloat(row.dr_open  || 0);
+                var crOpen  = parseFloat(row.cr_open  || 0);
+                var opening = parseFloat(row.out_opening || 0);
+                var dDate   = String(row.out_d_date  || '');
+
+                // Store original for dirty-check
+                _obOriginals.push({
+                    branch: branch,
+                    orgBal: opening,   // raw opening from DB (positive=Dr, negative=Cr)
+                    dDate:  dDate
+                });
+
+                var rowEl = document.createElement('div');
+                rowEl.style.cssText =
+                    'display:grid;grid-template-columns:1fr 130px 130px;' +
+                    'padding:8px 20px;border-bottom:1px solid #f0f3f8;' +
+                    'align-items:center;background:#fff;';
+                rowEl.dataset.idx = idx;
+
+                // Branch cell — show name with code badge
+                var branchName = String(row.out_branch_name || branch).trim();
+                var branchCell = document.createElement('div');
+                branchCell.style.cssText = 'font-size:13px;font-weight:500;color:#1a3a6b;';
+                branchCell.innerHTML =
+                    '<span style="font-family:monospace;font-size:11px;' +
+                    'background:#eaeff8;padding:2px 5px;border-radius:3px;' +
+                    'margin-right:7px;color:#4a6090;">' + escHtml(branch) + '</span>' +
+                    escHtml(branchName);
+
+                // Debit input
+                var drCell = document.createElement('div');
+                drCell.style.cssText = 'padding-left:8px;';
+                var drInput = document.createElement('input');
+                drInput.type      = 'number';
+                drInput.min       = '0';
+                drInput.step      = '0.001';
+                drInput.value     = drOpen.toFixed(3);
+                drInput.dataset.type = 'dr';
+                drInput.dataset.idx  = idx;
+                drInput.disabled  = (_obBalType === 'C');   // readonly if baltype=Credit
+                drInput.style.cssText =
+                    'width:100%;padding:5px 8px;border:1px solid #d4daea;' +
+                    'border-radius:4px;font-size:12.5px;text-align:right;' +
+                    'font-family:monospace;color:#1a5c30;' +
+                    'background:' + (_obBalType === 'C' ? '#f2f5fb' : '#fff') + ';' +
+                    'opacity:' + (_obBalType === 'C' ? '0.5' : '1') + ';';
+                drInput.addEventListener('keydown', function (e) {
+                    if (e.key === '-') e.preventDefault();
+                });
+                drInput.addEventListener('input', function () {
+                    this.value = this.value.replace(/[^0-9.]/g, '');
+                });
+                drInput.addEventListener('change', function() { syncCrOnDrChange(idx); });
+                drCell.appendChild(drInput);
+
+                // Credit input
+                var crCell = document.createElement('div');
+                crCell.style.cssText = 'padding-left:8px;';
+                var crInput = document.createElement('input');
+                crInput.type      = 'number';
+                crInput.min       = '0';
+                crInput.step      = '0.001';
+                crInput.value     = crOpen.toFixed(3);
+                crInput.dataset.type = 'cr';
+                crInput.dataset.idx  = idx;
+                crInput.disabled  = (_obBalType === 'D');   // readonly if baltype=Debit
+                crInput.style.cssText =
+                    'width:100%;padding:5px 8px;border:1px solid #d4daea;' +
+                    'border-radius:4px;font-size:12.5px;text-align:right;' +
+                    'font-family:monospace;color:#7a3030;' +
+                    'background:' + (_obBalType === 'D' ? '#f2f5fb' : '#fff') + ';' +
+                    'opacity:' + (_obBalType === 'D' ? '0.5' : '1') + ';';
+                crInput.addEventListener('keydown', function (e) {
+                    if (e.key === '-') e.preventDefault();
+                });
+                crInput.addEventListener('input', function () {
+                    this.value = this.value.replace(/[^0-9.]/g, '');
+                });
+                crInput.addEventListener('change', function() { syncDrOnCrChange(idx); });
+                crCell.appendChild(crInput);
+
+                rowEl.appendChild(branchCell);
+                rowEl.appendChild(drCell);
+                rowEl.appendChild(crCell);
+                container.appendChild(rowEl);
+            });
+        })
+        .catch(function(err) {
+            document.getElementById('ob-loading').style.display = 'none';
+            showToast('✕ Failed to load: ' + err.message, 'error');
+            closeObModal();
+        });
+    }
+
+    // When Dr changes → clear Cr (only one side at a time, unless baltype='B')
+    function syncCrOnDrChange(idx) {
+        if (_obBalType !== 'B') return;
+        var drInput = document.querySelector(
+            '[data-type="dr"][data-idx="' + idx + '"]');
+        var crInput = document.querySelector(
+            '[data-type="cr"][data-idx="' + idx + '"]');
+        if (drInput && crInput) {
+            var drVal = parseFloat(drInput.value || 0);
+            if (drVal > 0) { crInput.value = '0.000'; }
+        }
+    }
+
+    function syncDrOnCrChange(idx) {
+        if (_obBalType !== 'B') return;
+        var drInput = document.querySelector(
+            '[data-type="dr"][data-idx="' + idx + '"]');
+        var crInput = document.querySelector(
+            '[data-type="cr"][data-idx="' + idx + '"]');
+        if (drInput && crInput) {
+            var crVal = parseFloat(crInput.value || 0);
+            if (crVal > 0) { drInput.value = '0.000'; }
+        }
+    }
+
+    function saveOpeningBalance() {
+        if (!currentNode || _obOriginals.length === 0) return;
+
+        var saveRows = [];
+
+        _obOriginals.forEach(function(orig, idx) {
+            var drInput = document.querySelector('[data-type="dr"][data-idx="' + idx + '"]');
+            var crInput = document.querySelector('[data-type="cr"][data-idx="' + idx + '"]');
+            if (!drInput || !crInput) return;
+
+            var drVal = parseFloat(drInput.value || 0);
+            var crVal = parseFloat(crInput.value || 0);
+
+            // opbal: Debit = positive, Credit = negative
+            var opbal = drVal - crVal;
+
+            saveRows.push({
+                branch: orig.branch,
+                drOpen: drVal.toFixed(3),
+                crOpen: crVal.toFixed(3),
+                orgBal: orig.orgBal.toFixed(3),
+                dDate:  orig.dDate
+            });
+        });
+
+        if (saveRows.length === 0) {
+            showToast('No rows to save.', 'info');
+            return;
+        }
+
+        var btn = document.getElementById('ob-save-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        fetch('/masters/api/account/opening-balance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                companyCode: COMPANY_CODE,
+                accountCode: currentNode.accountCode,
+                rows:        saveRows
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">💾</span> Save';
+            if (d.success) {
+                showToast('✓ Opening balance saved', 'success');
+                closeObModal();
+            } else {
+                showToast('✕ ' + (d.error || 'Save failed'), 'error');
+            }
+        })
+        .catch(function(err) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon">💾</span> Save';
+            showToast('✕ ' + err.message, 'error');
+        });
+    }
+
+    var _tt = null;
+    function showToast(msg, type) {
+        var t = document.getElementById('toast');
+        t.textContent = msg; t.className = 'show ' + (type || 'info');
+        clearTimeout(_tt); _tt = setTimeout(function() { t.className = ''; }, 3500);
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { hideCtxMenu(); closeModal(); closeConfirmModal(); closeBranchModal(); closeApplyConfirmModal(); closeObModal(); if (isEditMode) cancelEdit(); }
+        if (e.key === 'Enter') {
+            if (document.getElementById('addModal').classList.contains('active')) saveNewAccount();
+            else if (isEditMode) saveCurrentAccount();
+        }
+    });
+
+</script>
+
+<!-- ── Apply to Branches Modal ───────────────────────────── -->
+<div class="modal-overlay" id="branchModal">
+    <div class="modal-box" style="width:500px;max-width:95vw">
+        <div class="modal-header">
+            <div>
+                <div class="modal-header-title">🏢 Apply to Branches</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:2px"
+                     id="branch-modal-subtitle"></div>
+            </div>
+            <button class="modal-close" onclick="closeBranchModal()">✕</button>
+        </div>
+        <div class="modal-body" style="padding:0">
+            <div style="display:grid;grid-template-columns:1fr 80px;
+                        padding:10px 20px 8px;border-bottom:1px solid #e8ecf4;
+                        background:#f7f9fc;">
+                <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;
+                             letter-spacing:.6px;color:#7a8daf;">Branch</span>
+                <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;
+                             letter-spacing:.6px;color:#7a8daf;text-align:center;">Apply</span>
+            </div>
+            <div id="branch-loading"
+                 style="padding:30px;text-align:center;color:#8a9bbf;font-size:12px">
+                <div style="font-size:24px;margin-bottom:8px">⏳</div>
+                Loading branches…
+            </div>
+            <div id="branch-list"
+                 style="display:none;max-height:320px;overflow-y:auto"></div>
+            <div id="branch-empty"
+                 style="display:none;padding:30px;text-align:center;
+                        color:#8a9bbf;font-size:12px">
+                <div style="font-size:24px;margin-bottom:8px">🏢</div>
+                No branches found.
+            </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between;align-items:center">
+            <span id="branch-selection-count"
+                  style="font-size:12px;color:#6a7fa8"></span>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-ghost" onclick="closeBranchModal()">Cancel</button>
+                <button class="btn btn-primary" id="branch-apply-btn"
+                        onclick="submitBranchApply()" disabled>
+                    <span class="btn-icon">✔</span> Apply Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Apply to Branches Confirm Modal ───────────────────── -->
+<div class="modal-overlay" id="applyConfirmModal">
+    <div class="modal-box" style="width:420px">
+        <div class="modal-header" style="background:#1A3A6B">
+            <div class="modal-header-title">🏢 Confirm Apply to Branches</div>
+            <button class="modal-close" onclick="closeApplyConfirmModal()">✕</button>
+        </div>
+        <div class="modal-body" style="padding:20px 22px">
+            <div style="display:flex;align-items:flex-start;gap:14px">
+                <div style="font-size:28px;line-height:1;flex-shrink:0">✔️</div>
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:#1a1a2e;margin-bottom:6px"
+                         id="apply-confirm-title"></div>
+                    <div style="font-size:12.5px;color:#5a6080;line-height:1.6"
+                         id="apply-confirm-msg"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="background:#F7F9FC;border-top:1px solid #F7F9FC">
+            <button class="btn btn-ghost" onclick="closeApplyConfirmModal()">Cancel</button>
+            <button class="btn" id="apply-confirm-ok-btn"
+                    style="background:#1A3A6B;color:#fff;margin-left:8px"
+                    onclick="executeApplyBranches()">
+                <span class="btn-icon">✔</span> Yes, Apply
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Opening Balance Modal ─────────────────────────────── -->
+<div class="modal-overlay" id="obModal">
+    <div class="modal-box" style="width:620px;max-width:96vw">
+        <div class="modal-header">
+            <div>
+                <div class="modal-header-title">💰 Opening Balance</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:2px"
+                     id="ob-subtitle"></div>
+            </div>
+            <button class="modal-close" onclick="closeObModal()">✕</button>
+        </div>
+
+        <!-- Local Currency section header -->
+        <div style="padding:10px 20px 6px;background:#f7f9fc;
+                    border-bottom:1px solid #e8ecf4;font-size:11px;
+                    font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+                    color:#1a3a6b;">
+            🪙 Local Currency
+        </div>
+
+        <div class="modal-body" style="padding:0">
+
+            <!-- Column headers -->
+            <div style="display:grid;grid-template-columns:1fr 130px 130px;
+                        padding:8px 20px;border-bottom:1px solid #e8ecf4;
+                        background:#f7f9fc;">
+                <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;
+                             letter-spacing:.6px;color:#7a8daf;">Branch</span>
+                <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;
+                             letter-spacing:.6px;color:#4a7a5a;text-align:right;
+                             padding-right:8px;" id="ob-dr-header">Debit</span>
+                <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;
+                             letter-spacing:.6px;color:#7a3030;text-align:right;
+                             padding-right:8px;" id="ob-cr-header">Credit</span>
+            </div>
+
+            <!-- Loading -->
+            <div id="ob-loading"
+                 style="padding:30px;text-align:center;color:#8a9bbf;font-size:12px">
+                <div style="font-size:24px;margin-bottom:8px">⏳</div>
+                Loading…
+            </div>
+
+            <!-- Rows -->
+            <div id="ob-rows"
+                 style="display:none;max-height:340px;overflow-y:auto"></div>
+
+            <!-- Empty -->
+            <div id="ob-empty"
+                 style="display:none;padding:30px;text-align:center;
+                        color:#8a9bbf;font-size:12px">
+                <div style="font-size:24px;margin-bottom:8px">💰</div>
+                No opening balance records found.
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeObModal()">Close</button>
+            <button class="btn btn-primary" id="ob-save-btn"
+                    onclick="saveOpeningBalance()" style="margin-left:8px">
+                <span class="btn-icon">💾</span> Save
+            </button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
