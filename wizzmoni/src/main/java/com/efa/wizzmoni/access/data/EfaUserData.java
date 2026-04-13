@@ -1,6 +1,7 @@
 package com.efa.wizzmoni.access.data;
 
-import java.sql.Timestamp;
+import java.math.BigDecimal;
+import java.sql.Date;
 
 public class EfaUserData {
 
@@ -13,18 +14,18 @@ public class EfaUserData {
     private String phone;
     private String fax;
     private String userCode;
-    private Integer finYr;
-    private java.sql.Timestamp finStart;
-    private java.sql.Timestamp finEnd;
+    private BigDecimal finYr;           // PG: numeric → BigDecimal (was Integer)
+    private Date finStart;              // PG: date    → java.sql.Date (was Timestamp)
+    private Date finEnd;                // PG: date    → java.sql.Date (was Timestamp)
     private String controlAc;
-    private java.math.BigDecimal maxBp;
-    private java.math.BigDecimal maxCp;
-    private Boolean finYearClose;
+    private BigDecimal maxBp;
+    private BigDecimal maxCp;
+    private Integer finYearClose;       // PG: integer → Integer (was Boolean)
     private String userName;
     private Integer version;
     private String cashParent;
     private String bankParent;
-    private String aoBranch;
+    private Character aoBranch;         // PG: character(1) → Character (was String)
     private java.sql.Timestamp sysDate;
     private String exportFlag;
     private String statusFlag;
@@ -101,27 +102,27 @@ public class EfaUserData {
         this.userCode = userCode;
     }
 
-    public Integer getFinYr() {
+    public BigDecimal getFinYr() {
         return finYr;
     }
 
-    public void setFinYr(Integer finYr) {
+    public void setFinYr(BigDecimal finYr) {
         this.finYr = finYr;
     }
 
-    public java.sql.Timestamp getFinStart() {
+    public Date getFinStart() {
         return finStart;
     }
 
-    public void setFinStart(java.sql.Timestamp finStart) {
+    public void setFinStart(Date finStart) {
         this.finStart = finStart;
     }
 
-    public java.sql.Timestamp getFinEnd() {
+    public Date getFinEnd() {
         return finEnd;
     }
 
-    public void setFinEnd(java.sql.Timestamp finEnd) {
+    public void setFinEnd(Date finEnd) {
         this.finEnd = finEnd;
     }
 
@@ -133,27 +134,27 @@ public class EfaUserData {
         this.controlAc = controlAc;
     }
 
-    public java.math.BigDecimal getMaxBp() {
+    public BigDecimal getMaxBp() {
         return maxBp;
     }
 
-    public void setMaxBp(java.math.BigDecimal maxBp) {
+    public void setMaxBp(BigDecimal maxBp) {
         this.maxBp = maxBp;
     }
 
-    public java.math.BigDecimal getMaxCp() {
+    public BigDecimal getMaxCp() {
         return maxCp;
     }
 
-    public void setMaxCp(java.math.BigDecimal maxCp) {
+    public void setMaxCp(BigDecimal maxCp) {
         this.maxCp = maxCp;
     }
 
-    public Boolean getFinYearClose() {
+    public Integer getFinYearClose() {
         return finYearClose;
     }
 
-    public void setFinYearClose(Boolean finYearClose) {
+    public void setFinYearClose(Integer finYearClose) {
         this.finYearClose = finYearClose;
     }
 
@@ -189,11 +190,11 @@ public class EfaUserData {
         this.bankParent = bankParent;
     }
 
-    public String getAoBranch() {
+    public Character getAoBranch() {
         return aoBranch;
     }
 
-    public void setAoBranch(String aoBranch) {
+    public void setAoBranch(Character aoBranch) {
         this.aoBranch = aoBranch;
     }
 

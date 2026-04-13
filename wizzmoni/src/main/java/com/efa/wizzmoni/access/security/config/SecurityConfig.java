@@ -113,8 +113,8 @@ public class SecurityConfig {
                         .requestMatchers("/efa/home").permitAll()
                         .requestMatchers("/efa/session-expired").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/efa/**").permitAll()
-                        //.requestMatchers("/efa/**").authenticated()
+                        //.requestMatchers("/efa/**").permitAll()
+                        .requestMatchers("/efa/**").authenticated()
                 )
 
                 // ─── SESSION ─────────────────────────────────────────

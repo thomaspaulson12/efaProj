@@ -2,6 +2,7 @@ package com.efa.wizzmoni.masters.controller;
 
 import com.efa.wizzmoni.masters.AccountMasterDto;
 import com.efa.wizzmoni.masters.service.AccountMasterService;
+import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-@RequestMapping("/masters")
+@RequestMapping("/efa/masters")
 public class AccountMasterController {
 
     private static final Logger log = LoggerFactory.getLogger(AccountMasterController.class);
@@ -25,7 +26,7 @@ public class AccountMasterController {
     // ── Page ──────────────────────────────────────────────────────
 
     @GetMapping("/account")
-    public String accountMasterPage(Model model) {
+    public String accountMasterPage(Model model, HttpSession session) {
         model.addAttribute("companyCode", accountMasterService.getDefaultCompany());
         model.addAttribute("finyr", (int) accountMasterService.getDefaultFinyr());
         return "masters/account";

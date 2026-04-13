@@ -36,21 +36,24 @@ public class EfaAccessCheckRepo {
                 u.setPhone(rs.getString("phone"));
                 u.setFax(rs.getString("fax"));
                 u.setUserCode(rs.getString("user_code"));
-                u.setFinYr(rs.getInt("finyr"));
-                u.setFinStart(rs.getTimestamp("fin_start"));
-                u.setFinEnd(rs.getTimestamp("fin_end"));
-                u.setControlAc(rs.getString("ControlAc"));
-                u.setMaxBp(rs.getBigDecimal("MaxBp"));
-                u.setMaxCp(rs.getBigDecimal("MaxCp"));
-                u.setFinYearClose(rs.getBoolean("finyearclose"));
+                u.setFinYr(rs.getBigDecimal("finyr"));              // Fixed: was getInt()
+                u.setFinStart(rs.getDate("fin_start"));             // Fixed: was getTimestamp()
+                u.setFinEnd(rs.getDate("fin_end"));                 // Fixed: was getTimestamp()
+                u.setControlAc(rs.getString("controlac"));
+                u.setMaxBp(rs.getBigDecimal("maxbp"));
+                u.setMaxCp(rs.getBigDecimal("maxcp"));
+                u.setFinYearClose(rs.getInt("finyearclose"));       // Fixed: was getBoolean()
                 u.setUserName(rs.getString("username"));
                 u.setVersion(rs.getInt("version"));
                 u.setCashParent(rs.getString("cash_parent"));
                 u.setBankParent(rs.getString("bank_parent"));
-                u.setAoBranch(rs.getString("aobranch"));
+                String aoBranch = rs.getString("aobranch");
+                u.setAoBranch(aoBranch != null && !aoBranch.isEmpty()
+                        ? aoBranch.charAt(0) : null);               // Fixed: was getString() directly
                 u.setSysDate(rs.getTimestamp("sysdate"));
                 u.setExportFlag(rs.getString("export_flag"));
-                u.setStatusFlag(rs.getString("status_flag"));
+                // Note: status_flag is NOT returned by fn_efa_login_session_select.
+                // It must be set separately after login validation if needed.
                 return u;
             }, branch, user);
 
@@ -58,7 +61,8 @@ public class EfaAccessCheckRepo {
         } catch (org.springframework.dao.EmptyResultDataAccessException ex) {
             log.warn("==== No user found for branch={} user={}", branch, user);
         } catch (Exception ex) {
-            log.error("==== Error fetching user details for branch={} user={}, reason={}", branch, user, ex.getMessage(), ex);
+            log.error("==== Error fetching user details for branch={} user={}, reason={}",
+                    branch, user, ex.getMessage(), ex);
             throw new RuntimeException("No Data Found");
         }
 

@@ -108,27 +108,10 @@ public class EfaAccessController {
         return "session-expired";
     }
 
-//    @GetMapping("/dashboard")
-//    public String dashboard(HttpSession session, Model model) {
-//
-//        EfaUserData userData = (EfaUserData) session.getAttribute("USER_DATA");
-//
-//        if (userData != null) {
-//            model.addAttribute("userName", userData.getEmployeeName());
-//            model.addAttribute("branchName", userData.getBranchName());
-//        } else {
-//            model.addAttribute("userName", "Unknown User");
-//            model.addAttribute("branchName", "Unknown Branch");
-//        }
-//
-//        String msg = (String) session.getAttribute("ACCESS_DENIED_MESSAGE");
-//        if (msg != null) {
-//            model.addAttribute("ACCESS_DENIED_MESSAGE", msg);
-//            session.removeAttribute("ACCESS_DENIED_MESSAGE");
-//        }
-//
-//        return "dashboard";
-////    }
-//        return "redirect:/efa/dashboard";
-//    }
+    @GetMapping("/dashboard")
+    public String dashboard(HttpSession session, Model model) {
+
+        EfaUserData userData = (EfaUserData) session.getAttribute("USER_DATA");
+        return "index";
+}
 }
